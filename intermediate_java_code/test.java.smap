@@ -1,0 +1,20 @@
+SMAP
+test.java
+COBOL
+*S COBOL
+*L
+*R
+*F
+-test.cbl
+*V
+VENDOR-NAME=Heirloom Computing
+PRODUCT-NAME=Elastic COBOL
+MAJOR-VERSION=18
+MINOR-VERSION=12
+SERVICE-VERSION=2
+*D
+@PGM
+test#
+@VAR-INFO
+#test
+*E

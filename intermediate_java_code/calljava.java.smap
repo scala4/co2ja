@@ -1,0 +1,37 @@
+SMAP
+calljava.java
+COBOL
+*S COBOL
+*L
+30!958~962:176~0@0
+31!997~1001:177~0@0
+32!1036~1040:178~0@0
+33!1075~1079:179~0@0
+34!1114~1118:180~0@0
+35!1153~1157:181~0@0
+36!1192~1196:182~0@0
+37!1231~1235:183~0@0
+38!1270~1274:184~0@0
+39!1309~1313:185~0@0
+42!1411~1417:186,10~0@0
+44!1488~1492:196,18~0@0
+47!1602~1609:214~0@0
+*R
+*F
+-calljava.cbl
++ 0 calljava.cbl
+C:\Scala4Apps\Vitec\VitecHLM\vitec-workspace\co2ja\cobol_source\calljava.cbl
+*V
+VENDOR-NAME=Heirloom Computing
+PRODUCT-NAME=Elastic COBOL
+MAJOR-VERSION=18
+MINOR-VERSION=12
+SERVICE-VERSION=2
+*D
+@PGM
+calljava#
+@PARA
+main_paragraph#
+@VAR-INFO
+#calljava~1[param-0:wrk.param_0:x(10):0:0:10;param-1:wrk.param_1:999v99:0:0:5;param-2:wrk.param_2:999.99:0:0:6;param-3:wrk.param_3::0:0:17[item-1:wrk.item_1_OF_param_3:x(10):0:1:10;item-2:wrk.item_2_OF_param_3:~ COMP-1:0:1:4;item-3:wrk.item_3_OF_param_3:999:0:1:3];param-4:wrk.param_4::0:0:100[item-element:wrk.item_element_OF_param_4:x(10):0:0:10];param-6:wrk.param_6:SXXXX SIGNED-INT:0:0:4]
+*E

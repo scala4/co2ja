@@ -1,0 +1,650 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. RKO807R.
+      **********************************************  Z-WIN-RPG2   ****
+      *  PROGRAM: RKO807, ENDRER RESK.NR I HHT TABELL                 *
+      *  ENDR...:                                                     *
+      *****************************************************************
+      *
+      **  armrpg: RPG to COBOL/VSE Version - 2018/09/26 2.5 R0 0362
+      **        : Inglenet Business Solutions :
+      ** options: -mv
+      **  Source: RKO807.rpg
+      *
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       SPECIAL-NAMES.
+               UPSI-0
+                    ON STATUS IS U-1-ON
+                   OFF STATUS IS U-1-OFF
+               UPSI-1
+                    ON STATUS IS U-2-ON
+                   OFF STATUS IS U-2-OFF
+               UPSI-2
+                    ON STATUS IS U-3-ON
+                   OFF STATUS IS U-3-OFF
+               UPSI-3
+                    ON STATUS IS U-4-ON
+                   OFF STATUS IS U-4-OFF
+               UPSI-4
+                    ON STATUS IS U-5-ON
+                   OFF STATUS IS U-5-OFF
+               UPSI-5
+                    ON STATUS IS U-6-ON
+                   OFF STATUS IS U-6-OFF
+               UPSI-6
+                    ON STATUS IS U-7-ON
+                   OFF STATUS IS U-7-OFF
+               UPSI-7
+                    ON STATUS IS U-8-ON
+                   OFF STATUS IS U-8-OFF
+           DECIMAL-POINT IS COMMA.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT FOKTAB
+               ASSIGN TO UT-S-FOKTAB
+               ACCESS MODE IS SEQUENTIAL
+               ORGANIZATION IS SEQUENTIAL
+               STATUS IS FOKTAB-STATUS.
+           SELECT KTOKURI
+               ASSIGN TO UT-S-KTOKURI
+               ACCESS MODE IS SEQUENTIAL
+               ORGANIZATION IS SEQUENTIAL
+               STATUS IS KTOKURI-STATUS.
+           SELECT KTOKURO
+               ASSIGN TO UT-S-KTOKURO
+               ACCESS MODE IS SEQUENTIAL
+               ORGANIZATION IS SEQUENTIAL
+               STATUS IS KTOKURO-STATUS.
+           SELECT LISTE
+               ASSIGN TO SYS020-UR-3203-SYSLST
+               ACCESS MODE IS SEQUENTIAL
+               ORGANIZATION IS SEQUENTIAL
+               STATUS IS LISTE-STATUS.
+       DATA DIVISION.
+       FILE SECTION.
+       FD FOKTAB
+               BLOCK CONTAINS 80
+               RECORD CONTAINS 80.
+       01  FOKTAB-IO-AREA.
+           05  FOKTAB-IO-AREA-X            PICTURE X(80).
+       FD KTOKURI
+               BLOCK CONTAINS 1200
+               RECORD CONTAINS 120.
+       01  KTOKURI-IO-AREA.
+           05  KTOKURI-IO-AREA-X           PICTURE X(120).
+       FD KTOKURO
+               BLOCK CONTAINS 1200
+               RECORD CONTAINS 120.
+       01  KTOKURO-IO-AREA.
+           05  KTOKURO-IO-AREA-X           PICTURE X(120).
+      *BUGFILO O   F  80  80            PRINTERSYSLST
+       FD LISTE
+               BLOCK CONTAINS 133
+               RECORD CONTAINS 133.
+       01  LISTE-IO-PRINT.
+           05  LISTE-IO-AREA-CONTROL       PICTURE X VALUE ' '.
+        02 LISTE-IO-AREA.
+           05  LISTE-IO-AREA-X             PICTURE X(132).
+       WORKING-STORAGE SECTION.
+       77  TABFOK-MAX   VALUE 100          PICTURE 9(4) USAGE BINARY.
+       77  TABKTO-MAX   VALUE 100          PICTURE 9(4) USAGE BINARY.
+       01  TABLES.
+           05  TABFOK-TABLE.
+               10  TABFOK-ENTRY
+                                           OCCURS 100 TIMES
+                                           INDEXED BY TABFOK-I
+                                                      TABFOK-S
+                                                      TABKTO-I
+                                                      TABKTO-S.
+                   15  TABFOK              PICTURE X(9).
+                   15  TABKTO              PICTURE X(6).
+       01  ACCEPT-COMMAND-LINE             PICTURE X(80).
+       01  FILE-STATUS-TABLE.
+           10  FOKTAB-STATUS               PICTURE 99 VALUE 0.
+           10  KTOKURI-STATUS              PICTURE 99 VALUE 0.
+           10  KTOKURO-STATUS              PICTURE 99 VALUE 0.
+           10  LISTE-STATUS                PICTURE 99 VALUE 0.
+ 
+       01  WORK-AREA-BATCH.
+           05  FILLER                      PIC X VALUE '0'.
+               88  FOKTAB-EOF-OFF          VALUE '0'.
+               88  FOKTAB-EOF              VALUE '1'.
+           05  FILLER                      PIC X VALUE '0'.
+               88  KTOKURI-EOF-OFF         VALUE '0'.
+               88  KTOKURI-EOF             VALUE '1'.
+           05  FILLER                      PIC X VALUE '0'.
+               88  KTOKURI-READ-OFF        VALUE '0'.
+               88  KTOKURI-READ            VALUE '1'.
+           05  FILLER                      PIC X VALUE '0'.
+               88  KTOKURI-PROCESS-OFF     VALUE '0'.
+               88  KTOKURI-PROCESS         VALUE '1'.
+           05  FILLER                      PIC X VALUE '1'.
+               88  KTOKURI-LEVEL-INIT-OFF  VALUE '0'.
+               88  KTOKURI-LEVEL-INIT      VALUE '1'.
+           05  LISTE-DATA-FIELDS.
+               10  LISTE-AFTER-SPACE       PICTURE 9(4) BINARY
+                                           VALUE 0.
+               10  LISTE-AFTER-SKIP        PICTURE 9(4) BINARY
+                                           VALUE 0.
+               10  LISTE-BEFORE-SPACE      PICTURE 9(4) BINARY
+                                           VALUE 0.
+               10  LISTE-BEFORE-SKIP       PICTURE 9(4) BINARY
+                                           VALUE 0.
+               10  LISTE-MAX-LINES         PICTURE 9(4) BINARY
+                                           VALUE 0.
+               10  LISTE-LINE-COUNT        PICTURE 9(4) BINARY
+                                           VALUE 0.
+               10  LISTE-CLR-IO            PICTURE X VALUE 'Y'.
+           05  KTOKURI-LEVEL-01.
+               10  KTOKURI-01-L2.
+                   15  KTOKURI-01-L2-FNR1  PICTURE X(3).
+               10  KTOKURI-01-L1.
+                   15  KTOKURI-01-L1-RES1  PICTURE X(6).
+           05  KTOKURI-DATA-FIELDS.
+               10  REC120                  PICTURE X(120).
+               10  FNR1                    PICTURE X(3).
+               10  RES1                    PICTURE X(6).
+               10  FOK                     PICTURE X(9).
+           05  THE-PRIOR-LEVEL.
+               10  THE-PRIOR-L2            PICTURE X(3).
+               10  THE-PRIOR-L1            PICTURE X(6).
+           05  TEMPORARY-FIELDS.
+               10  ANTKOR-IO.
+                   15  ANTKOR              PICTURE S9(9).
+               10  ANTLES-IO.
+                   15  ANTLES              PICTURE S9(9).
+           05  EDITTING-FIELDS.
+               10  XO-90YY9R               PICTURE ZZZ.ZZZ.ZZ9-.
+       01  WORK-AREA.
+           05  INDICATOR-TABLE.
+               COPY TCRPGIN.
+           05  SYSTEM-DATE                 PICTURE 9(6).
+           05  SYSTEM-DATE-ALPHA           REDEFINES SYSTEM-DATE.
+               10  SYSTEM-YEAR             PICTURE 99.
+               10  SYSTEM-MONTH            PICTURE 99.
+               10  SYSTEM-DAY              PICTURE 99.
+           05  SYSTEM-TIME-X.
+               10  SYSTEM-TIME             PICTURE 9(6).
+               10  FILLER                  PICTURE 99.
+           05  LR-CHECK                    PICTURE 9(4) BINARY.
+           05  UDATE                       PICTURE 9(6).
+           05  UDATE-DDMMYY.
+               10  UDAY                    PICTURE 99.
+               10  UMONTH                  PICTURE 99.
+               10  UYEAR                   PICTURE 99.
+           05  EDIT-DATE                   PICTURE 99.99.99.99.99.
+           05  TID                         PICTURE X(8).
+           05  FILLER                      PICTURE X.
+               88  NOT-SET-I-OF            VALUE '0'.
+               88  SET-I-OF                VALUE '1'.
+           05  FILLER                      PICTURE X.
+               88  NOT-IN-DETAIL-OUTPUT    VALUE '0'.
+               88  IN-DETAIL-OUTPUT        VALUE '1'.
+           05  FILLER                      PICTURE X.
+               88  RECORD-SELECTED-OFF     VALUE '0'.
+               88  RECORD-SELECTED         VALUE '1'.
+           05  E-R-R-O-R                   PICTURE X(12).
+           05  BW-A                        PICTURE 9(4) USAGE BINARY.
+           05  FILLER REDEFINES BW-A.
+               10  BW-A-1                  PICTURE X.
+               10  BW-A-2                  PICTURE X.
+           05  BW-B                        PICTURE 9(4) USAGE BINARY.
+           05  FILLER REDEFINES BW-B.
+               10  BW-B-1                  PICTURE X.
+               10  BW-B-2                  PICTURE X.
+       PROCEDURE DIVISION.
+ 
+       MAIN-LINE.
+           PERFORM INITIALIZATION
+ 
+           PERFORM HEADING-OUTPUT
+           SET IN-DETAIL-OUTPUT            TO TRUE
+           PERFORM DETAIL-OUTPUT
+           SET NOT-IN-DETAIL-OUTPUT        TO TRUE
+           SET NOT-I-1P                    TO TRUE.
+ 
+       MAINLINE-LOOP.
+           PERFORM HEADING-OUTPUT
+           SET IN-DETAIL-OUTPUT            TO TRUE
+           PERFORM DETAIL-OUTPUT
+           SET NOT-IN-DETAIL-OUTPUT        TO TRUE
+           IF  NOT-SET-I-OF
+               SET NOT-I-OF                TO TRUE
+           END-IF
+           SET NOT-SET-I-OF                TO TRUE
+ 
+           PERFORM HALT-INDICATOR-CHECK
+           SET NOT-I-01                    TO TRUE
+ 
+           PERFORM SETOFF-I-L
+           PERFORM SETOFF-I-H
+ 
+           IF  I-LR
+               PERFORM SETON-I-L9
+               GO TO MAINLINE-TOTAL-CALCS
+           END-IF
+ 
+           SET RECORD-SELECTED-OFF         TO TRUE
+           IF  KTOKURI-PROCESS
+               SET KTOKURI-PROCESS-OFF     TO TRUE
+               SET KTOKURI-READ            TO TRUE
+           END-IF
+ 
+           IF  KTOKURI-READ
+           AND RECORD-SELECTED-OFF
+               PERFORM KTOKURI-GET
+               SET KTOKURI-READ-OFF        TO TRUE
+               IF  NOT KTOKURI-EOF
+                   SET KTOKURI-PROCESS     TO TRUE
+                   SET RECORD-SELECTED     TO TRUE
+               END-IF
+           END-IF
+ 
+           IF  LR-CHECK < 1
+               SET I-LR                    TO TRUE
+               PERFORM SETON-I-L9
+               GO TO MAINLINE-TOTAL-CALCS
+           END-IF
+ 
+           IF  KTOKURI-PROCESS
+               PERFORM KTOKURI-IDSET
+           END-IF
+ 
+           IF  KTOKURI-PROCESS
+               PERFORM KTOKURI-CHK-LEVEL
+           END-IF
+ 
+           IF I-1ST
+               GO TO LR-INDICATOR-TEST
+           END-IF.
+ 
+       MAINLINE-TOTAL-CALCS.
+           PERFORM TOTAL-OUTPUT.
+ 
+       LR-INDICATOR-TEST.
+           IF  I-LR
+               GO TO MAINLINE-TERMINATION
+           END-IF
+           PERFORM HEADING-OVERFLOW
+ 
+           IF  KTOKURI-PROCESS
+               PERFORM KTOKURI-FLDSET
+           END-IF
+ 
+           PERFORM DETAIL-CALCS
+           IF  KTOKURI-PROCESS
+               SET NOT-I-1ST               TO TRUE
+           END-IF
+           GO TO MAINLINE-LOOP.
+ 
+       MAINLINE-TERMINATION.
+           PERFORM TERMINATION
+           MOVE ZERO                       TO RETURN-CODE
+           STOP RUN.
+ 
+       DETAIL-CALCS SECTION.
+       DETAIL-CALCS-P.
+           IF  (I-L1 AND I-U8)
+               SET NOT-I-10                TO TRUE
+               SET TABFOK-S                TO TABFOK-I
+               PERFORM WITH TEST AFTER
+                       VARYING TABFOK-I FROM 1 BY 1
+                         UNTIL TABFOK-I >= TABFOK-MAX
+                            OR I-10
+                   IF  FOK = TABFOK (TABFOK-I)
+                       SET I-10            TO TRUE
+                       SET TABFOK-S        TO TABFOK-I
+                   END-IF
+               END-PERFORM
+               SET TABFOK-I                TO TABFOK-S
+               IF  I-10
+               AND TABFOK-I NOT > TABKTO-MAX
+                   SET TABKTO-I            TO TABFOK-I
+               END-IF
+           END-IF
+           IF  (I-01 AND I-10)
+               ADD 1                       TO ANTKOR
+           END-IF
+           IF  (I-01)
+               ADD 1                       TO ANTLES
+      *
+           END-IF
+           .
+ 
+       KTOKURI-GET SECTION.
+       KTOKURI-GET-P.
+           IF  KTOKURI-EOF-OFF
+               READ KTOKURI
+               AT END
+                   SET KTOKURI-EOF         TO TRUE
+                   SUBTRACT 1            FROM LR-CHECK
+               END-READ
+           END-IF.
+ 
+       KTOKURI-FLDSET SECTION.
+       KTOKURI-FLDSET-P.
+           EVALUATE TRUE
+           WHEN ANY
+               MOVE KTOKURI-IO-AREA (1:120) TO REC120 (1:120)
+               MOVE KTOKURI-IO-AREA (1:3)  TO FNR1 (1:3)
+               MOVE KTOKURI-IO-AREA (4:6)  TO RES1 (1:6)
+               MOVE KTOKURI-IO-AREA (1:9)  TO FOK (1:9)
+           END-EVALUATE.
+ 
+       KTOKURI-IDSET SECTION.
+       KTOKURI-IDSET-P.
+           SET I-01                        TO TRUE.
+ 
+       KTOKURI-CHK-LEVEL SECTION.
+       KTOKURI-CHK-LEVEL-P.
+           EVALUATE TRUE
+           WHEN ANY
+               MOVE LOW-VALUES             TO KTOKURI-LEVEL-01
+               MOVE KTOKURI-IO-AREA (1:3)  TO KTOKURI-01-L2-FNR1
+               MOVE KTOKURI-IO-AREA (4:6)  TO KTOKURI-01-L1-RES1
+               IF  KTOKURI-LEVEL-INIT
+                   EVALUATE TRUE
+                   WHEN  KTOKURI-01-L2 NOT = THE-PRIOR-L2
+                       PERFORM SETON-I-L2
+                   WHEN  KTOKURI-01-L1 NOT = THE-PRIOR-L1
+                       PERFORM SETON-I-L1
+                   END-EVALUATE
+               END-IF
+               MOVE  KTOKURI-01-L2         TO THE-PRIOR-L2
+               MOVE  KTOKURI-01-L1         TO THE-PRIOR-L1
+               SET KTOKURI-LEVEL-INIT      TO TRUE
+           END-EVALUATE.
+ 
+       LISTE-PRINT-LINE SECTION.
+       LISTE-PRINT-LINE-P.
+           IF  LISTE-BEFORE-SKIP > 0
+               PERFORM LISTE-SKIP-BEFORE
+           END-IF
+           IF  LISTE-BEFORE-SPACE > 0
+               PERFORM LISTE-SPACE-BEFORE
+               IF  LISTE-AFTER-SKIP > 0
+                   PERFORM LISTE-SKIP-AFTER
+               END-IF
+               IF  LISTE-AFTER-SPACE > 0
+                   PERFORM LISTE-SPACE-AFTER
+               END-IF
+           ELSE
+               IF  LISTE-AFTER-SKIP > 0
+                   PERFORM LISTE-SKIP-AFTER
+               END-IF
+               PERFORM LISTE-SPACE-AFTER
+           END-IF
+           IF  LISTE-LINE-COUNT NOT < LISTE-MAX-LINES
+               SET I-OF                    TO TRUE
+               IF  IN-DETAIL-OUTPUT
+                   SET SET-I-OF            TO TRUE
+               END-IF
+           END-IF.
+ 
+       LISTE-SKIP-BEFORE SECTION.
+       LISTE-SKIP-BEFORE-P.
+           WRITE LISTE-IO-PRINT         AFTER ADVANCING PAGE
+           MOVE 1                          TO LISTE-LINE-COUNT
+           MOVE 0                          TO LISTE-BEFORE-SKIP
+           INITIALIZE LISTE-IO-AREA.
+ 
+       LISTE-SPACE-BEFORE SECTION.
+       LISTE-SPACE-BEFORE-P.
+           WRITE LISTE-IO-PRINT         AFTER LISTE-BEFORE-SPACE LINES
+           ADD LISTE-BEFORE-SPACE          TO LISTE-LINE-COUNT
+           MOVE SPACES TO LISTE-IO-AREA
+           INITIALIZE LISTE-IO-AREA
+           MOVE 0                          TO LISTE-BEFORE-SPACE.
+ 
+       LISTE-SKIP-AFTER SECTION.
+       LISTE-SKIP-AFTER-P.
+           WRITE LISTE-IO-PRINT        BEFORE ADVANCING PAGE
+           MOVE 1                          TO LISTE-LINE-COUNT
+           MOVE 0                          TO LISTE-AFTER-SKIP
+           INITIALIZE LISTE-IO-AREA.
+ 
+       LISTE-SPACE-AFTER SECTION.
+       LISTE-SPACE-AFTER-P.
+           WRITE LISTE-IO-PRINT        BEFORE LISTE-AFTER-SPACE LINES
+           ADD LISTE-AFTER-SPACE           TO LISTE-LINE-COUNT
+           INITIALIZE LISTE-IO-AREA
+           MOVE 0                          TO LISTE-AFTER-SPACE.
+ 
+       FOKTAB-LOAD SECTION.
+       FOKTAB-LOAD-P.
+           OPEN INPUT FOKTAB
+           SET TABFOK-I                    TO 1
+           PERFORM UNTIL FOKTAB-EOF
+               READ FOKTAB
+               AT END
+                   SET FOKTAB-EOF          TO TRUE
+               NOT AT END
+                   MOVE FOKTAB-IO-AREA (1:15) TO TABFOK-ENTRY
+                                                            (TABFOK-I)
+                   SET TABFOK-I            UP BY 1
+               END-READ
+           END-PERFORM
+           CLOSE FOKTAB.
+ 
+       DETAIL-OUTPUT SECTION.
+       DETAIL-OUTPUT-P.
+           IF  (I-01)
+               MOVE SPACES TO KTOKURO-IO-AREA
+               INITIALIZE KTOKURO-IO-AREA
+               MOVE REC120                 TO KTOKURO-IO-AREA (1:120)
+               IF  (I-10)
+                   MOVE TABKTO (TABKTO-I)  TO KTOKURO-IO-AREA (4:6)
+               END-IF
+               WRITE KTOKURO-IO-AREA
+           END-IF
+           IF  (I-01 AND I-10)
+               MOVE SPACES TO LISTE-IO-AREA
+               INITIALIZE LISTE-IO-AREA
+               MOVE REC120                 TO LISTE-IO-AREA (1:120)
+               MOVE 'FØR   '               TO LISTE-IO-AREA (125:6)
+               MOVE 1                      TO LISTE-BEFORE-SPACE
+               PERFORM LISTE-PRINT-LINE
+               MOVE SPACES TO LISTE-IO-AREA
+               INITIALIZE LISTE-IO-AREA
+               MOVE REC120                 TO LISTE-IO-AREA (1:120)
+               IF  (I-10)
+                   MOVE TABKTO (TABKTO-I)  TO LISTE-IO-AREA (4:6)
+               END-IF
+               MOVE 'ETTER '               TO LISTE-IO-AREA (125:6)
+               MOVE 1                      TO LISTE-BEFORE-SPACE
+               PERFORM LISTE-PRINT-LINE
+           END-IF.
+ 
+       HEADING-OUTPUT SECTION.
+       HEADING-OUTPUT-P.
+           IF  (I-1P)
+               MOVE SPACES TO LISTE-IO-AREA
+               INITIALIZE LISTE-IO-AREA
+               MOVE 'PROGRAM RKO807          ' TO LISTE-IO-AREA (1:24)
+               MOVE 'KORRIGERING AV RESK.NR  ' TO LISTE-IO-AREA (25:24)
+               MOVE 01                     TO LISTE-BEFORE-SKIP
+               MOVE 1                      TO LISTE-BEFORE-SPACE
+               PERFORM LISTE-PRINT-LINE
+               MOVE SPACES TO LISTE-IO-AREA
+               INITIALIZE LISTE-IO-AREA
+               MOVE '....+...10....+...20' TO LISTE-IO-AREA (1:20)
+               MOVE '....+...30....+...40' TO LISTE-IO-AREA (21:20)
+               MOVE '....+...50....+...60' TO LISTE-IO-AREA (41:20)
+               MOVE '....+...70....+...80' TO LISTE-IO-AREA (61:20)
+               MOVE '....+...90....+..100' TO LISTE-IO-AREA (81:20)
+               MOVE '....+..120....+..130' TO LISTE-IO-AREA (91:20)
+               MOVE 2                      TO LISTE-BEFORE-SPACE
+               PERFORM LISTE-PRINT-LINE
+           END-IF.
+ 
+       HEADING-OVERFLOW SECTION.
+       HEADING-OVERFLOW-P.
+           IF  (I-OF)
+               MOVE SPACES TO LISTE-IO-AREA
+               INITIALIZE LISTE-IO-AREA
+               MOVE 'PROGRAM RKO807          ' TO LISTE-IO-AREA (1:24)
+               MOVE 'KORRIGERING AV RESK.NR  ' TO LISTE-IO-AREA (25:24)
+               MOVE 01                     TO LISTE-BEFORE-SKIP
+               MOVE 1                      TO LISTE-BEFORE-SPACE
+               PERFORM LISTE-PRINT-LINE
+               MOVE SPACES TO LISTE-IO-AREA
+               INITIALIZE LISTE-IO-AREA
+               MOVE '....+...10....+...20' TO LISTE-IO-AREA (1:20)
+               MOVE '....+...30....+...40' TO LISTE-IO-AREA (21:20)
+               MOVE '....+...50....+...60' TO LISTE-IO-AREA (41:20)
+               MOVE '....+...70....+...80' TO LISTE-IO-AREA (61:20)
+               MOVE '....+...90....+..100' TO LISTE-IO-AREA (81:20)
+               MOVE '....+..120....+..130' TO LISTE-IO-AREA (91:20)
+               MOVE 2                      TO LISTE-BEFORE-SPACE
+               PERFORM LISTE-PRINT-LINE
+           END-IF.
+ 
+       TOTAL-OUTPUT SECTION.
+       TOTAL-OUTPUT-P.
+           IF  (I-LR)
+               MOVE SPACES TO LISTE-IO-AREA
+               INITIALIZE LISTE-IO-AREA
+               MOVE 'ANT LEST:'            TO LISTE-IO-AREA (2:9)
+               MOVE ANTLES                 TO XO-90YY9R
+               MOVE XO-90YY9R              TO LISTE-IO-AREA (19:12)
+               MOVE 2                      TO LISTE-BEFORE-SPACE
+               PERFORM LISTE-PRINT-LINE
+               MOVE SPACES TO LISTE-IO-AREA
+               INITIALIZE LISTE-IO-AREA
+               MOVE 'ANT KORR:'            TO LISTE-IO-AREA (2:9)
+               MOVE ANTKOR                 TO XO-90YY9R
+               MOVE XO-90YY9R              TO LISTE-IO-AREA (19:12)
+               MOVE 1                      TO LISTE-BEFORE-SPACE
+               PERFORM LISTE-PRINT-LINE
+           END-IF.
+ 
+       HALT-INDICATOR-CHECK SECTION.
+       HALT-INDICATOR-CHECK-P.
+           IF (I-H0 OR I-H1 OR I-H2 OR I-H3 OR I-H4
+           OR  I-H5 OR I-H6 OR I-H7 OR I-H8 OR I-H9)
+               DISPLAY 'USER SET HALT INDICATORS ARE: '
+               F-H0 ',' F-H1 ',' F-H2 ',' F-H3 ',' F-H4 ','
+               F-H5 ',' F-H6 ',' F-H7 ',' F-H8 ',' F-H9 UPON CONSOLE
+               GO TO MAINLINE-TERMINATION
+           END-IF.
+ 
+       INITIALIZATION SECTION.
+       INITIALIZATION-P.
+           MOVE ZERO                       TO RETURN-CODE
+           MOVE ZEROS                      TO INDICATOR-TABLE
+           SET I-1ST                       TO TRUE
+           SET I-L0                        TO TRUE
+           SET I-1P                        TO TRUE
+           SET NOT-IN-DETAIL-OUTPUT        TO TRUE
+           IF  U-1-ON
+               SET I-U1                    TO TRUE
+           END-IF
+           IF  U-2-ON
+               SET I-U2                    TO TRUE
+           END-IF
+           IF  U-3-ON
+               SET I-U3                    TO TRUE
+           END-IF
+           IF  U-4-ON
+               SET I-U4                    TO TRUE
+           END-IF
+           IF  U-5-ON
+               SET I-U5                    TO TRUE
+           END-IF
+           IF  U-6-ON
+               SET I-U6                    TO TRUE
+           END-IF
+           IF  U-7-ON
+               SET I-U7                    TO TRUE
+           END-IF
+           IF  U-8-ON
+               SET I-U8                    TO TRUE
+           END-IF
+           ACCEPT SYSTEM-DATE            FROM DATE
+           ACCEPT SYSTEM-TIME-X          FROM TIME
+           MOVE SYSTEM-YEAR                TO UYEAR
+           MOVE SYSTEM-MONTH               TO UMONTH
+           MOVE SYSTEM-DAY                 TO UDAY
+           MOVE UDATE-DDMMYY               TO UDATE
+           MOVE 1                          TO LR-CHECK
+           PERFORM FOKTAB-LOAD
+           SET KTOKURI-LEVEL-INIT          TO TRUE
+           INITIALIZE KTOKURI-DATA-FIELDS
+           SET KTOKURI-EOF-OFF             TO TRUE
+           SET KTOKURI-PROCESS             TO TRUE
+           OPEN INPUT KTOKURI
+           OPEN OUTPUT KTOKURO
+           OPEN OUTPUT LISTE
+           INITIALIZE LISTE-IO-AREA
+           INITIALIZE LISTE-DATA-FIELDS
+           MOVE 57                         TO LISTE-MAX-LINES.
+           SET TABFOK-I                    TO 1
+           INITIALIZE TEMPORARY-FIELDS.
+ 
+       TERMINATION SECTION.
+       TERMINATION-P.
+           CLOSE KTOKURI
+           CLOSE KTOKURO
+           IF LISTE-IO-AREA NOT = SPACES
+             WRITE LISTE-IO-PRINT BEFORE 1 LINE
+             MOVE SPACES TO LISTE-IO-AREA
+           END-IF
+           CLOSE LISTE.
+ 
+       SETOFF-I-L SECTION.
+           SET NOT-I-L1                    TO TRUE.
+           SET NOT-I-L2                    TO TRUE.
+           SET NOT-I-L3                    TO TRUE.
+           SET NOT-I-L4                    TO TRUE.
+           SET NOT-I-L5                    TO TRUE.
+           SET NOT-I-L6                    TO TRUE.
+           SET NOT-I-L7                    TO TRUE.
+           SET NOT-I-L8                    TO TRUE.
+           SET NOT-I-L9                    TO TRUE.
+ 
+       SETON-I-L9 SECTION.
+           SET I-L9                        TO TRUE.
+           PERFORM SETON-I-L8.
+ 
+       SETON-I-L8 SECTION.
+           SET I-L8                        TO TRUE.
+           PERFORM SETON-I-L7.
+ 
+       SETON-I-L7 SECTION.
+           SET I-L7                        TO TRUE.
+           PERFORM SETON-I-L6.
+ 
+       SETON-I-L6 SECTION.
+           SET I-L6                        TO TRUE.
+           PERFORM SETON-I-L5.
+ 
+       SETON-I-L5 SECTION.
+           SET I-L5                        TO TRUE.
+           PERFORM SETON-I-L4.
+ 
+       SETON-I-L4 SECTION.
+           SET I-L4                        TO TRUE.
+           PERFORM SETON-I-L3.
+ 
+       SETON-I-L3 SECTION.
+           SET I-L3                        TO TRUE.
+           PERFORM SETON-I-L2.
+ 
+       SETON-I-L2 SECTION.
+           SET I-L2                        TO TRUE.
+           PERFORM SETON-I-L1.
+ 
+       SETON-I-L1 SECTION.
+           SET I-L1                        TO TRUE.
+ 
+       SETOFF-I-H SECTION.
+           SET NOT-I-H1                    TO TRUE.
+           SET NOT-I-H2                    TO TRUE.
+           SET NOT-I-H3                    TO TRUE.
+           SET NOT-I-H4                    TO TRUE.
+           SET NOT-I-H5                    TO TRUE.
+           SET NOT-I-H6                    TO TRUE.
+           SET NOT-I-H7                    TO TRUE.
+           SET NOT-I-H8                    TO TRUE.
+           SET NOT-I-H9                    TO TRUE.
+           SET NOT-I-H0                    TO TRUE.
