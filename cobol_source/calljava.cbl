@@ -8,7 +8,7 @@
       * conjunction with the Elastic COBOL product.
       *
       
-      **
+      ** commit from vitecscala4 workspace
        identification division.
        program-id. calljava.
       
