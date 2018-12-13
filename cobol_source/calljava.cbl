@@ -8,7 +8,7 @@
       * conjunction with the Elastic COBOL product.
       *
       
-      * second commit
+      **
        identification division.
        program-id. calljava.
       
