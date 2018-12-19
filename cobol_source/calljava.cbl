@@ -9,6 +9,7 @@
       *
       
       ** commit from vitecscala4 workspace
+      ** commit from vitectore workspaces
        identification division.
        program-id. calljava.
       
